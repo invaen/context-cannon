@@ -199,6 +199,13 @@ class ContextCannon:
 
         if context and context in payloads:
             result = payloads[context].copy()
+        elif context:
+            valid = ', '.join(payloads.keys())
+            print(f"Warning: invalid context '{context}' for type '{vuln_type}'. "
+                  f"Valid contexts: {valid}. Falling back to all contexts.",
+                  file=sys.stderr)
+            for val in payloads.values():
+                result.extend(val)
         else:
             for val in payloads.values():
                 result.extend(val)
@@ -211,6 +218,9 @@ class ContextCannon:
         # Encode
         if encode and encode in self.encoders:
             result = [self.encoders[encode](p) for p in result]
+
+        if not result:
+            print("Warning: No payloads matched the given filters.", file=sys.stderr)
 
         return list(set(result))
 
@@ -256,8 +266,11 @@ def main():
         cannon.print_payloads(payloads, args.type, args.context)
 
         if args.output:
-            Path(args.output).write_text('\n'.join(payloads))
-            print(f"\n{C.G}Saved to: {args.output}{C.E}")
+            try:
+                Path(args.output).write_text('\n'.join(payloads))
+                print(f"\n{C.G}Saved to: {args.output}{C.E}")
+            except (OSError, PermissionError) as e:
+                print(f"Error: Could not write to '{args.output}': {e}", file=sys.stderr)
     else:
         parser.print_help()
 

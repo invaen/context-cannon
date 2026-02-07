@@ -20,17 +20,17 @@
 Generic payload lists waste time. If you know you're injecting into a double-quoted HTML attribute with `script` filtered, you need payloads that fit **that exact context**. Context Cannon generates targeted payloads based on vulnerability type, injection context, blocked strings, and encoding requirements.
 
 ```bash
-$ context-cannon -t xss -c attribute_double --filter "script,alert" -e url
-  1. %22%20onmouseover%3D%22prompt%281%29
-  2. %22%20onfocus%3D%22prompt%281%29%22%20autofocus%3D%22
-  3. %22%3E%3Cimg%20src%3Dx%20onerror%3Dprompt%281%29%3E
+$ context-cannon -t xss -c attribute_double --filter "script" -e url
+  1. %22%20onmouseover%3D%22alert%281%29
+  2. %22%20onfocus%3D%22alert%281%29%22%20autofocus%3D%22
+  3. %22%3E%3Cimg%20src%3Dx%20onerror%3Dalert%281%29%3E
 ```
 
 ## The Problem
 
 You find a reflected parameter. You know:
 - It's inside a `<div class="VALUE">` (double-quoted attribute)
-- The WAF blocks `script` and `alert`
+- The WAF blocks `script`
 - URL encoding passes through
 
 Copying from a generic payload list means manually filtering, encoding, and adapting each payload. Context Cannon does this in one command.
@@ -108,6 +108,9 @@ context-cannon -t xss -c waf_bypass -o payloads.txt
 | `detection` | Engine-agnostic detection (`{{7*7}}`, `${7*7}`) |
 | `jinja2` | Jinja2/Flask exploitation |
 | `twig` | Twig/Symfony exploitation |
+| `erb` | ERB/Ruby exploitation |
+| `velocity` | Apache Velocity exploitation |
+| `freemarker` | FreeMarker exploitation |
 
 ### SSRF Contexts
 | Context | Target |
