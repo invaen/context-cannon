@@ -20,7 +20,7 @@ from urllib.parse import quote, quote_plus
 import html
 import base64
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # Colors
 class C:

@@ -24,8 +24,14 @@ jobs:
       - name: Install package
         run: pip install -e .
 
+      - name: Install test dependencies
+        run: pip install pytest
+
       - name: Verify CLI entry point
         run: context-cannon --version
 
       - name: Verify payload listing
         run: context-cannon --list
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
