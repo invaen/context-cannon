@@ -222,7 +222,7 @@ class ContextCannon:
         if not result:
             print("Warning: No payloads matched the given filters.", file=sys.stderr)
 
-        return list(set(result))
+        return list(dict.fromkeys(result))
 
     def print_payloads(self, payloads, vuln_type, context=None):
         """Pretty print payloads"""
@@ -271,6 +271,7 @@ def main():
                 print(f"\n{C.G}Saved to: {args.output}{C.E}")
             except (OSError, PermissionError) as e:
                 print(f"Error: Could not write to '{args.output}': {e}", file=sys.stderr)
+                sys.exit(1)
     else:
         parser.print_help()
 
