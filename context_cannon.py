@@ -27,6 +27,10 @@ class C:
     R = '\033[91m'; G = '\033[92m'; Y = '\033[93m'; B = '\033[94m'
     M = '\033[95m'; C = '\033[96m'; W = '\033[97m'; E = '\033[0m'
 
+    @classmethod
+    def disable(cls):
+        cls.R = cls.G = cls.Y = cls.B = cls.M = cls.C = cls.W = cls.E = ''
+
 def banner():
     print(f"""{C.Y}
    ╔═╗╔═╗╔╗╔╔╦╗╔═╗═╗ ╦╔╦╗  ╔═╗╔═╗╔╗╔╔╗╔╔═╗╔╗╔
@@ -250,12 +254,20 @@ def main():
     parser.add_argument('-e', '--encode', choices=['url', 'url_full', 'html', 'base64', 'hex', 'double_url'])
     parser.add_argument('-o', '--output', help='Output file')
     parser.add_argument('--list', action='store_true', help='List available contexts')
+    parser.add_argument('--no-color', action='store_true', help='Disable colored output')
+    parser.add_argument('--json', action='store_true', help='Output as JSON')
+    parser.add_argument('-q', '--quiet', action='store_true', help='Suppress banner, print payloads only')
 
     args = parser.parse_args()
+
+    if args.no_color:
+        C.disable()
+
     cannon = ContextCannon()
 
     if args.list:
-        banner()
+        if not args.quiet:
+            banner()
         print(f"{C.Y}Available Contexts:{C.E}\n")
         for vtype, contexts in cannon.payloads.items():
             print(f"{C.G}{vtype}:{C.E} {', '.join(contexts.keys())}")
@@ -263,12 +275,30 @@ def main():
 
     if args.type:
         payloads = cannon.generate(args.type, args.context, args.filter, args.encode)
-        cannon.print_payloads(payloads, args.type, args.context)
+
+        if args.json:
+            output = {
+                'type': args.type,
+                'context': args.context,
+                'count': len(payloads),
+                'payloads': payloads,
+            }
+            if args.filter:
+                output['filter'] = args.filter
+            if args.encode:
+                output['encoding'] = args.encode
+            print(json.dumps(output, indent=2))
+        elif args.quiet:
+            for p in payloads:
+                print(p)
+        else:
+            cannon.print_payloads(payloads, args.type, args.context)
 
         if args.output:
             try:
                 Path(args.output).write_text('\n'.join(payloads))
-                print(f"\n{C.G}Saved to: {args.output}{C.E}")
+                if not args.quiet and not args.json:
+                    print(f"\n{C.G}Saved to: {args.output}{C.E}")
             except (OSError, PermissionError) as e:
                 print(f"Error: Could not write to '{args.output}': {e}", file=sys.stderr)
                 sys.exit(1)
