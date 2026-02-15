@@ -3,7 +3,7 @@
   <p align="center">
     <b>Payload generation that adapts to context and filters.</b>
     <br />
-    <i>XSS, SQLi, SSTI, SSRF, LFI — encoded and filtered for your exact injection point.</i>
+    <i>XSS, SQLi, SSTI, SSRF, LFI, CMDi — encoded and filtered for your exact injection point.</i>
   </p>
 </p>
 
@@ -76,16 +76,29 @@ context-cannon -t ssrf -c cloud_meta
 # LFI with PHP wrapper payloads
 context-cannon -t lfi -c wrapper
 
+# OS command injection payloads
+context-cannon -t cmdi -c blind
+
 # Save output to file (for feeding into ffuf, Burp Intruder, etc.)
 context-cannon -t xss -c waf_bypass -o payloads.txt
+
+# Quiet mode — raw payloads only, no banner (ideal for piping)
+context-cannon -t xss -c html --quiet
+
+# JSON output for tool integration
+context-cannon -t sqli -c mysql --json
+
+# Disable colors for log files
+context-cannon -t xss -c html --no-color
 ```
 
 ## Supported Types
 
-### XSS Contexts
+### XSS — 47 payloads, 8 contexts
 | Context | Injection Point |
 |---------|----------------|
 | `html` | Inside HTML body (`<div>INJECT</div>`) |
+| `dom` | DOM-based XSS (javascript: URIs, fragment injection) |
 | `no_script` | `<script>` tag is filtered |
 | `no_parentheses` | Parentheses are filtered |
 | `attribute_double` | Inside double-quoted attribute (`"INJECT"`) |
@@ -93,16 +106,18 @@ context-cannon -t xss -c waf_bypass -o payloads.txt
 | `javascript` | Inside JavaScript string context |
 | `waf_bypass` | Case manipulation, encoding, whitespace tricks |
 
-### SQLi Contexts
+### SQLi — 39 payloads, 7 contexts
 | Context | Target |
 |---------|--------|
 | `detection` | Boolean/error-based detection probes |
 | `mysql` | MySQL-specific (UNION, SLEEP, extractvalue) |
 | `postgres` | PostgreSQL-specific (pg_sleep) |
 | `mssql` | MSSQL-specific (WAITFOR DELAY) |
+| `sqlite` | SQLite-specific (sqlite_version, sqlite_master) |
+| `blind` | Blind boolean/time-based injection |
 | `bypass` | Comment injection, case manipulation |
 
-### SSTI Contexts
+### SSTI — 19 payloads, 7 contexts
 | Context | Template Engine |
 |---------|----------------|
 | `detection` | Engine-agnostic detection (`{{7*7}}`, `${7*7}`) |
@@ -111,20 +126,30 @@ context-cannon -t xss -c waf_bypass -o payloads.txt
 | `erb` | ERB/Ruby exploitation |
 | `velocity` | Apache Velocity exploitation |
 | `freemarker` | FreeMarker exploitation |
+| `mako` | Mako/Python exploitation |
 
-### SSRF Contexts
+### SSRF — 21 payloads, 3 contexts
 | Context | Target |
 |---------|--------|
 | `localhost` | Localhost bypass variants (decimal IP, IPv6, hex) |
-| `cloud_meta` | AWS/GCP metadata endpoints |
-| `bypass` | DNS rebinding services |
+| `cloud_meta` | AWS/GCP/Azure metadata endpoints |
+| `bypass` | DNS rebinding, URL parser confusion |
 
-### LFI Contexts
+### LFI — 13 payloads, 4 contexts
 | Context | Target |
 |---------|--------|
 | `basic` | Path traversal with encoding variants |
 | `windows` | Windows-specific paths |
-| `wrapper` | PHP wrappers (filter, input) |
+| `wrapper` | PHP wrappers (filter, input, data, expect) |
+| `log_poison` | Log file paths for log poisoning |
+
+### CMDi — 20 payloads, 4 contexts
+| Context | Target |
+|---------|--------|
+| `basic` | Shell metacharacter injection (; | ` $()) |
+| `blind` | Time-based blind command injection |
+| `windows` | Windows-specific command injection |
+| `bypass` | IFS, quoting, globbing tricks |
 
 ## Encoding
 
