@@ -20,7 +20,7 @@ from urllib.parse import quote, quote_plus
 import html
 import base64
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 # Colors
 class C:
@@ -265,7 +265,7 @@ class ContextCannon:
             },
         }
 
-    def generate(self, vuln_type, context=None, filters=None, encode=None):
+    def generate(self, vuln_type, context=None, filters=None, encode=None, filter_regex=None):
         """Generate payloads based on type, context, and filters"""
         if vuln_type not in self.payloads:
             print(f"{C.R}Unknown type: {vuln_type}{C.E}")
@@ -287,10 +287,22 @@ class ContextCannon:
             for val in payloads.values():
                 result.extend(val)
 
-        # Filter blocked strings
+        # Filter blocked strings (substring match, models WAF behavior)
         if filters:
             filter_list = [f.strip().lower() for f in filters.split(',')]
             result = [p for p in result if not any(f in p.lower() for f in filter_list)]
+
+        # Filter by regex patterns (precise control)
+        if filter_regex:
+            regex_list = [f.strip() for f in filter_regex.split(',')]
+            compiled = []
+            for pattern in regex_list:
+                try:
+                    compiled.append(re.compile(pattern, re.IGNORECASE))
+                except re.error as e:
+                    print(f"Warning: invalid regex '{pattern}': {e}", file=sys.stderr)
+            if compiled:
+                result = [p for p in result if not any(r.search(p) for r in compiled)]
 
         # Encode
         if encode and encode in self.encoders:
@@ -323,7 +335,8 @@ def main():
     parser.add_argument('-t', '--type', choices=['xss', 'sqli', 'ssti', 'ssrf', 'lfi', 'cmdi'],
                         help='Vulnerability type')
     parser.add_argument('-c', '--context', help='Specific context')
-    parser.add_argument('--filter', help='Blocked strings to avoid (comma-separated)')
+    parser.add_argument('--filter', help='Blocked substrings to avoid, comma-separated (models WAF behavior)')
+    parser.add_argument('--filter-regex', help='Regex patterns to exclude, comma-separated (precise control)')
     parser.add_argument('-e', '--encode', choices=['url', 'url_full', 'html', 'base64', 'hex', 'double_url'])
     parser.add_argument('-o', '--output', help='Output file')
     parser.add_argument('--list', action='store_true', help='List available contexts')
@@ -347,7 +360,7 @@ def main():
         return
 
     if args.type:
-        payloads = cannon.generate(args.type, args.context, args.filter, args.encode)
+        payloads = cannon.generate(args.type, args.context, args.filter, args.encode, args.filter_regex)
 
         if args.json:
             output = {
@@ -358,6 +371,8 @@ def main():
             }
             if args.filter:
                 output['filter'] = args.filter
+            if args.filter_regex:
+                output['filter_regex'] = args.filter_regex
             if args.encode:
                 output['encoding'] = args.encode
             print(json.dumps(output, indent=2))
